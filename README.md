@@ -9,20 +9,62 @@ I am actively developing this system and am keeping my project notes here so tha
 # Part 2: Software environment
 I'm using Auvidea's drivers and patches for the IMX219, which are compatible with NVIDIA's JetPack 2.3.1 development environment. JetPack 2.3.1 only runs on Ubuntu 14.04, so I've set that up in a VM on my Windows 10 machine.
 
-Using JetPack, install into a convenient directory (e.g. ~/JetPack-2.3.1)
- - Common
- - CUDA Toolkit for Ubuntu 14.04
- - OpenCV for Tegra
- - Linux for Tegra (TX1 64-Bit)
-   - Driver for OS
+ - [JetPack 2.3.1 Release Notes](https://developer.nvidia.com/embedded/jetpack-2_3_1)
+ - [L4T 24.2.1 Release Notes](https://developer.nvidia.com/embedded/linux-tegra-r2421)
 
-TODO: insert screenshot
+1. Using JetPack, install into a convenient directory (e.g. ~/JetPack-2.3.1)
+   - Common
+   - CUDA Toolkit for Ubuntu 14.04
+   - OpenCV for Tegra
+   TODO: insert screenshot
+
+1. JetPack forces you to download their rootfs if you try to use it to download the Kernel and drivers, so we can just download the driver pack instead (link in the L4T release notes).
+   ```bash
+   cd JetPack-2.3.1
+   mkdir 64_TX1
+   tar xf Tegra210_Linux_R24.2.1_aarch64.tbz2 -C 64_TX1
+   ```
+
+1. Copy the Makefile and patches into `JetPack-2.3.1./64_TX1/Linux_for_Tegra`. If you don't care about the Auvidea patches, just apply the first (patches/no-chromium.patch) to add the `--no-chrome` option to `apply_binaries.sh`:
+   ```bash
+   quilt push
+   ```
+
+1. At this point, if you want to use the stock kernel you can skip to Part 4 to generate the rootfs before flashing. For those who want to customize the kernel, read on!
+
 
 # Part 3: Patching & compiling the kernel
-Use `quilt` to apply my patches -- they were adapted from Auvidea's
-
-TODO: remember the rest of the steps D:
-
+1. First we must download the kernel. This is done using the `source_sync.sh` script given the current L4T release tag (listed in the Tegra Linux Driver Package Release Notes pdf). I have added a make target for it as well:
+   ```bash
+   make sync
+   ```qq
+1. Next, use `quilt` to apply the remaining patches. These are Auvidea's patches for the J106 and M100 boards, with support for the IMX219 image sensor. I modified them a bit to normalize them and clean them up.
+   ```bash
+   quilt push -a
+   ```
+   The last patch adds a file `p2371-2180-j106.conf`, which sets the environment variables for flashing the board. To choose it replace the `jetson-tx1.conf` link:
+   ```bash
+   ln -snf p2371-2180-j106.conf jetson-tx1.conf
+   ```
+1. Configure the kernel for building.
+   ```bash
+   make config
+   make menuconfig
+   ```
+   The default `config` target is Auvidea's, set in an environment variable at the top of `Makefile`. Use the `menuconfig` target if you care to edit it. You may need to install `sudo apt install libncurses5-dev` to run `make menuconfig`.
+   
+1. Build the kernel, supplements (modules), and headers. You can parallelize by editing `NCPU=2` in `Makefile`.
+   ```bash
+   make kernel
+   make supplements
+   make headers
+   ```
+   
+1. Copy the built kernel, etc. into the right places for JetPack:
+   ```bash
+   make install
+   ```
+1. If you already have a rootfs set up, you're ready to make the system image and flash it--see Part 5.
 
 # Part 4: Minimal root filesystem
 We'll build up the root filesystem (`rootfs`) up from Ubuntu Base--the minimal Ubuntu distribution. Doing it this way is a bit of a hassle, but it's a fair bit smaller (~1 GB) than the default `rootfs` (~3 GB) -- leading to less resource usage and faster flash times.
@@ -169,7 +211,8 @@ Note that I tend to use `apt` rather than `apt-get` -- it's simply friendlier.
    sudo ./apply_binaries.sh --no-chrome
    ```
    The `--no-chrome` option is added by one of my patches--it stops the script from copying the Chromium browser into the filesystem.
-# Flash it!
+
+# Part 5: Make and flash the system image.
 1. Use `make image` to generate the system image.
 1. Boot the TX1 into Force Recovery mode & attach it by USB. I had to futz with my VM's USB settings to get it to enumerate properly--check with `lsusb` to make sure it's recognized.
 1. Run `make flash` to flash the system image. Note that this will not regenerate the system image, it will flash whatever image you last generated with `make image`!
