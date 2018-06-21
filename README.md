@@ -1,8 +1,17 @@
 # jetson-tx1-imx219
-Setting up a Jetson TX1 with the IMX219 image sensor on an J106 &amp; M100 motherboard.
+Setting up a Jetson TX1 with the IMX219 image sensor on an J106 &amp; M100 motherboard. I need to edit the IMX219's modes, which involves rebuilding both the driver and the dtb files for the kernel.
 
 # Note well: this procedure is a work in progress, and has not been extensively tested!
 I am actively developing this system and am keeping my project notes here so that I can do a complete rebuild if necessary. I'm writing these notes publicly on the off-chance that someone else will find them useful. Please feel free to contribute if you feel so moved.
+
+To Do:
+[ ] Guide on how to modify the IMX219's modes
+[ ] Make the IMX219 driver a module so that I don't have to rebuild the whole kernel each time I change it?
+[ ] Add links to the various parts and their documentation.
+[ ] Screenshots of JetPack?
+[ ] Maybe add targets to the Makefile to deal with JetPack and Tegra210_...tbz2?
+[ ] Try using the 24.2.3 BSP rather than 24.2.1.
+[ ] See if Auvidea's patches would work with the 28.2.1 BSP (seems unlikely--they supposedly made some big changes)
 
 ## Part 1: Parts & datasheets
 
@@ -16,9 +25,8 @@ I'm using Auvidea's drivers and patches for the IMX219, which are compatible wit
    - Common
    - CUDA Toolkit for Ubuntu 14.04
    - OpenCV for Tegra
-   TODO: insert screenshot
 
-1. JetPack forces you to download their rootfs if you try to use it to download the Kernel and drivers, so we can just download the driver pack instead (link in the L4T release notes).
+1. JetPack forces you to download their rootfs if you try to use it to download the Kernel and drivers, so we can just download the driver pack instead (link in the L4T release notes). If you want the default rootfs, go for it, otherwise:
    ```bash
    cd JetPack-2.3.1
    mkdir 64_TX1
@@ -30,7 +38,7 @@ I'm using Auvidea's drivers and patches for the IMX219, which are compatible wit
    quilt push
    ```
 
-1. At this point, if you want to use the stock kernel you can skip to Part 4 to generate the rootfs before flashing. For those who want to customize the kernel, read on!
+1. At this point, if you want to use the stock kernel you can skip to Part 4 to generate the rootfs, or go straight to Part 5 if you just want to flash the dang thing already.
 
 
 ## Part 3: Patching & compiling the kernel
@@ -102,9 +110,9 @@ Note that I tend to use `apt` rather than `apt-get` -- it's simply friendlier.
       ```
    1. Install other useful packages.
       ```bash
-      apt install -y man-db ethtool hwinfo lshw elinks python
+      apt install -y man-db ethtool hwinfo lshw elinks python htop
       ```
-   1. Add a user. Note that you must add a user to the group `video` on the Jetson to access the ISP & NVMM. Obviously we're not interested in security around here... Maybe replace "user" and "pass" with what you think are reasonable! NVidia's defaults are "ubuntu" and "ubuntu".
+   1. Add a user. Note that you must add a user to the group `video` on the Jetson to access the ISP & NVMM. Maybe replace "user" and "pass" with what you think are reasonable! NVidia's defaults are "ubuntu" and "ubuntu".
       ```bash
       adduser --disabled-password --gecos "Name" user
       echo "user:pass" | chpasswd
@@ -124,17 +132,17 @@ Note that I tend to use `apt` rather than `apt-get` -- it's simply friendlier.
       mkdir /etc/systemd/system/getty@.service.d
       editor /etc/systemd/system/getty@.service.d/override.conf
       ```
-      Add:
+      Add, replacing `user` with your username:
       ```ini
       [Service]
       ExecStart=
       ExecStart=-/sbin/agetty --autologin user --noclear %I $TERM
       ```
-      Or as a one-liner:
+      Or as a one-liner, replacing `user` with your username:
       ```bash
       printf '[Service]\nExecStart=\nExecStart=-/sbin/agetty --autologin user --noclear %%I $TERM\n' > /etc/systemd/system/getty@.service.d/override.conf
       ```
-      And similarly for `serial-getty@.service`, but specify the baud rate (115200) and terminal type (vt100). I use RealTerm for talking serial and `vt100` is as good as it gets. PuTTY supports `vt102` and `xterm`. Try `ls -R /lib/terminfo` to list all of the terminal types supported by Ubuntu.
+      And similarly for `serial-getty@.service`, but specify the baud rate (115200) and terminal type (vt100). Again, replace `user` with your username:
       ```bash
       mkdir /etc/systemd/system/serial-getty@.service.d
       printf '[Service]\nExecStart=\nExecStart=-/sbin/agetty --autologin user --local-line %%I 115200 vt100\n' > /etc/systemd/system/serial-getty@.service.d/override.conf
@@ -144,6 +152,7 @@ Note that I tend to use `apt` rather than `apt-get` -- it's simply friendlier.
          - The empty entry `ExecStart=` clears any previous values of `ExecStart`.
          - Single quotes means bash won't replace `$TERM` with its current value.
          - `printf` replaces `%%` with `%`
+         - I use RealTerm for talking serial and `vt100` is as good as it gets. PuTTY supports `vt102` and `xterm`. Try `ls -R /lib/terminfo` to list all of the terminal types supported by Ubuntu.
    1. Edit `/etc/network/interfaces` to automatically raise `eth0` with DHCP:
       ```bash
       editor /etc/network interfaces
@@ -162,7 +171,7 @@ Note that I tend to use `apt` rather than `apt-get` -- it's simply friendlier.
       ```bash
       editor /etc/ntp.conf
       ```
-      Add (replace the URL with something appropriate):
+      Add (replace the URL with something appropriate for you):
       ```
       pool ntp.uq.edu.au
       ```
@@ -188,13 +197,14 @@ Note that I tend to use `apt` rather than `apt-get` -- it's simply friendlier.
       printf '[Seat:*]\nautologin-user=user\nuser-session=openbox\npam-service=lightdm-autologin\nallow-guest=false\n' > /etc/lightdm/lightdm.conf
       ```
       Note that
+         - If you haven't used openbox before, expect to be wowed by a blank gray screen after booting... try right-clicking.
          - NVidia's `apply_binaries.sh` script adds `/etc/lightdm/lightdm.conf.d/50-nvidia.conf` that sets `autologin-user=ubuntu`. You'll have to either delete that file or make your username `ubuntu` too.
          - `--no-install-recommends` cuts down on installing many excess packages
    1. Install a graphical web browser. Dillo is OK and about 5 MB (including fltk). QEMU throws a fit when you install it, but it works in the end.
       ```bash
       apt install dillo
       ```
-   1. Install gstreamer and plugins. You could probably get by with fewer plugins.
+   1. Install gstreamer and plugins. You might get by with fewer plugins.
       ```bash
       apt install --no-install-recommends gstreamer1.0-tools gstreamer1.0-plugins-base gstreamer1.0-plugins-base-apps gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly
       ```
@@ -210,7 +220,7 @@ Note that I tend to use `apt` rather than `apt-get` -- it's simply friendlier.
    ```bash
    sudo ./apply_binaries.sh --no-chrome
    ```
-   The `--no-chrome` option is added by one of my patches--it stops the script from copying the Chromium browser into the filesystem.
+   The `--no-chrome` option is added by one of my patches--it stops the script from copying the Chromium browser (230 MB without its dependencies) into the filesystem.
 
 ## Part 5: Make and flash the system image.
 1. Use `make image` to generate the system image.
