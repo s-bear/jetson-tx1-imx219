@@ -4,9 +4,9 @@ Setting up a Jetson TX1 with the IMX219 image sensor on an J106 &amp; M100 mothe
 # Note well: this procedure is a work in progress, and has not been extensively tested!
 I am actively developing this system and am keeping my project notes here so that I can do a complete rebuild if necessary. I'm writing these notes publicly on the off-chance that someone else will find them useful. Please feel free to contribute if you feel so moved.
 
-# Part 1: Parts & datasheets
+## Part 1: Parts & datasheets
 
-# Part 2: Software environment
+## Part 2: Software environment
 I'm using Auvidea's drivers and patches for the IMX219, which are compatible with NVIDIA's JetPack 2.3.1 development environment. JetPack 2.3.1 only runs on Ubuntu 14.04, so I've set that up in a VM on my Windows 10 machine.
 
  - [JetPack 2.3.1 Release Notes](https://developer.nvidia.com/embedded/jetpack-2_3_1)
@@ -33,7 +33,7 @@ I'm using Auvidea's drivers and patches for the IMX219, which are compatible wit
 1. At this point, if you want to use the stock kernel you can skip to Part 4 to generate the rootfs before flashing. For those who want to customize the kernel, read on!
 
 
-# Part 3: Patching & compiling the kernel
+## Part 3: Patching & compiling the kernel
 1. First we must download the kernel. This is done using the `source_sync.sh` script given the current L4T release tag (listed in the Tegra Linux Driver Package Release Notes pdf). I have added a make target for it as well:
    ```bash
    make sync
@@ -66,7 +66,7 @@ I'm using Auvidea's drivers and patches for the IMX219, which are compatible wit
    ```
 1. If you already have a rootfs set up, you're ready to make the system image and flash it--see Part 5.
 
-# Part 4: Minimal root filesystem
+## Part 4: Minimal root filesystem
 We'll build up the root filesystem (`rootfs`) up from Ubuntu Base--the minimal Ubuntu distribution. Doing it this way is a bit of a hassle, but it's a fair bit smaller (~1 GB) than the default `rootfs` (~3 GB) -- leading to less resource usage and faster flash times.
 Note that I tend to use `apt` rather than `apt-get` -- it's simply friendlier.
 
@@ -212,7 +212,7 @@ Note that I tend to use `apt` rather than `apt-get` -- it's simply friendlier.
    ```
    The `--no-chrome` option is added by one of my patches--it stops the script from copying the Chromium browser into the filesystem.
 
-# Part 5: Make and flash the system image.
+## Part 5: Make and flash the system image.
 1. Use `make image` to generate the system image.
 1. Boot the TX1 into Force Recovery mode & attach it by USB. I had to futz with my VM's USB settings to get it to enumerate properly--check with `lsusb` to make sure it's recognized.
 1. Run `make flash` to flash the system image. Note that this will not regenerate the system image, it will flash whatever image you last generated with `make image`!
