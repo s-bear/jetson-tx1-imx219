@@ -5,13 +5,13 @@ Setting up a Jetson TX1 with the IMX219 image sensor on an J106 &amp; M100 mothe
 I am actively developing this system and am keeping my project notes here so that I can do a complete rebuild if necessary. I'm writing these notes publicly on the off-chance that someone else will find them useful. Please feel free to contribute if you feel so moved.
 
 To Do:
-[ ] Guide on how to modify the IMX219's modes
-[ ] Make the IMX219 driver a module so that I don't have to rebuild the whole kernel each time I change it?
-[ ] Add links to the various parts and their documentation.
-[ ] Screenshots of JetPack?
-[ ] Maybe add targets to the Makefile to deal with JetPack and Tegra210_...tbz2?
-[ ] Try using the 24.2.3 BSP rather than 24.2.1.
-[ ] See if Auvidea's patches would work with the 28.2.1 BSP (seems unlikely--they supposedly made some big changes)
+- [ ] Guide on how to modify the IMX219's modes
+- [ ] Make the IMX219 driver a module so that I don't have to rebuild the whole kernel each time I change it?
+- [ ] Add links to the various parts and their documentation.
+- [ ] Screenshots of JetPack?
+- [ ] Maybe add targets to the Makefile to deal with JetPack and Tegra210_...tbz2?
+- [ ] Try using the 24.2.3 BSP rather than 24.2.1.
+- [ ] See if Auvidea's patches would work with the 28.2.1 BSP (seems unlikely--they supposedly made some big changes)
 
 ## Part 1: Parts & datasheets
 
