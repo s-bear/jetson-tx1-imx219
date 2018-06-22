@@ -155,7 +155,7 @@ Note that I tend to use `apt` rather than `apt-get` -- it's simply friendlier.
          - I use RealTerm for talking serial and `vt100` is as good as it gets. PuTTY supports `vt102` and `xterm`. Try `ls -R /lib/terminfo` to list all of the terminal types supported by Ubuntu.
    1. Edit `/etc/network/interfaces` to automatically raise `eth0` with DHCP:
       ```bash
-      editor /etc/network interfaces
+      editor /etc/network/interfaces
       ```
       Add:
       ```
