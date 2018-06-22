@@ -181,7 +181,7 @@ Note that I tend to use `apt` rather than `apt-get` -- it's simply friendlier.
       ```
    1. Install graphics stuff. My gut tells me that this is necessary to use the TX1's GPU, but I'm not positive. It's fairly low priority on my TO-DO list for me to test that since I need a GUI anyway. 
       ```bash
-      apt install --no-install-recommends xorg lightdm openbox menu python-xdg consolekit
+      apt install -y --no-install-recommends xorg lightdm openbox menu python-xdg consolekit
       editor /etc/lightdm/lightdm.conf
       ```
       Set up autologin, since we haven't installed a greeter:
@@ -202,11 +202,11 @@ Note that I tend to use `apt` rather than `apt-get` -- it's simply friendlier.
          - `--no-install-recommends` cuts down on installing many excess packages
    1. Install a graphical web browser. Dillo is OK and about 5 MB (including fltk). QEMU throws a fit when you install it, but it works in the end.
       ```bash
-      apt install dillo
+      apt install -y dillo
       ```
    1. Install gstreamer and plugins. You might get by with fewer plugins.
       ```bash
-      apt install --no-install-recommends gstreamer1.0-tools gstreamer1.0-plugins-base gstreamer1.0-plugins-base-apps gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly
+      apt install -y --no-install-recommends gstreamer1.0-tools gstreamer1.0-plugins-base gstreamer1.0-plugins-base-apps gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly
       ```
    1. Exit the `chroot` environment
       ```bash
