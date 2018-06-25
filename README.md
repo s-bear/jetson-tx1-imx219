@@ -5,6 +5,8 @@ Setting up a Jetson TX1 with the IMX219 image sensor on an J106 &amp; M100 mothe
 I am actively developing this system and am keeping my project notes here so that I can do a complete rebuild if necessary. I'm writing these notes publicly on the off-chance that someone else will find them useful. Please feel free to contribute if you feel so moved.
 
 To Do:
+- [ ] How does menuconfig actually work??
+- [ ] bootloader/t210ref/p2371-2180-j106
 - [ ] Guide on how to modify the IMX219's modes
 - [ ] Make the IMX219 driver a module so that I don't have to rebuild the whole kernel each time I change it?
 - [ ] Add links to the various parts and their documentation.
@@ -60,6 +62,7 @@ I'm using Auvidea's drivers and patches for the IMX219, which are compatible wit
    make menuconfig
    ```
    The default `config` target is Auvidea's, set in an environment variable at the top of `Makefile`. Use the `menuconfig` target if you care to edit it. You may need to install `sudo apt install libncurses5-dev` to run `make menuconfig`.
+   - Disable `Device Drivers > SPI support > Debug support for SPI drivers` to prevent spam in the kernel logs (e.g. `spi-tegra114 7000d400.spi: The def 0x44808000 and written 0x44a00007` every 0.1 ms).
    
 1. Build the kernel, supplements (modules), and headers. You can parallelize by editing `NCPU=2` in `Makefile`.
    ```bash
@@ -67,7 +70,7 @@ I'm using Auvidea's drivers and patches for the IMX219, which are compatible wit
    make supplements
    make headers
    ```
-   
+
 1. Copy the built kernel, etc. into the right places for JetPack:
    ```bash
    make install
@@ -110,7 +113,7 @@ Note that I tend to use `apt` rather than `apt-get` -- it's simply friendlier.
       ```
    1. Install other useful packages.
       ```bash
-      apt install -y man-db ethtool hwinfo lshw elinks python htop
+      apt install -y man-db ethtool hwinfo lshw kmod elinks python htop
       ```
    1. Add a user. Note that you must add a user to the group `video` on the Jetson to access the ISP & NVMM. Maybe replace "user" and "pass" with what you think are reasonable! NVidia's defaults are "ubuntu" and "ubuntu".
       ```bash
@@ -208,6 +211,7 @@ Note that I tend to use `apt` rather than `apt-get` -- it's simply friendlier.
       ```bash
       apt install -y --no-install-recommends gstreamer1.0-tools gstreamer1.0-plugins-base gstreamer1.0-plugins-base-apps gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly
       ```
+     
    1. Exit the `chroot` environment
       ```bash
       exit
@@ -221,6 +225,28 @@ Note that I tend to use `apt` rather than `apt-get` -- it's simply friendlier.
    sudo ./apply_binaries.sh --no-chrome
    ```
    The `--no-chrome` option is added by one of my patches--it stops the script from copying the Chromium browser (230 MB without its dependencies) into the filesystem.
+
+## Part 5: Other stuff
+1. Boot options. 
+   - The boot options are on the `APPEND` lines of the `bootloader/${TARGET_BOARD}/${SYSBOOTFILE}.<media>` files, one of which `flash.sh` copies to `rootfs/boot/extlinux/extlinux.conf`, based on which media you wish to boot from (specified on the command line to `flash.sh`).
+   - `TARGET_BOARD` and `SYSBOOTFILE` are defined in `jetson-tx1.conf` (or whichever file it links to). By default `TARGET_BOARD = t210ref` and `SYSBOOTFILE = p2371-2180-devkit/extlinux.conf`. I change it to `SYSBOOTFILE = p2371-2180-j106/extlinux.conf` to keep things separate.
+   - If you want to edit boot options without reflashing the device, the easiest way is to edit the `/boot/extlinux/extlinux.conf` file on the device.
+   - If you want to edit boot options at boot time, you can do it via the serial terminal. Unless you want to retype the entire boot command, first edit your `extlinux.conf` file (or any of its precursors) to add an  environment variable to the end of the `APPEND` line:
+      ```bash
+      LABEL primary
+          MENU LABEL primary kernel
+          #...LINUX, INITRD, FDT lines...
+          APPEND <lots of options> ${extra_bootargs}
+      ```
+      Then, using the serial terminal, interrupt the boot process when it says `Hit any key to stop autoboot: (x)`--you'll end up at a prompt like `Tegra210 (P2371-2180) #` (enter `help` for a list of available commands). Now you can do something like:
+      ```bash
+      setenv extra_bootargs spi_tegra114.dyndbg=-p
+      boot
+      ```
+1. Disabling SPI debug messages. The `spi-tegra114` module spams a lot of debug messages, which makes debugging other things quite difficult. It's possible to disable them without recompiling the kernel using the dynamic debug system. Unfortunately `spi-tegra114` is statically loaded, so we have to add the options to the kernel boot options rather than in a `etc/modprobe.d/*.conf` file. The relevant option is `spi_tegra114.dyndbg=-p`.
+   - Try `sudo cat /sys/kernel/debug/dynamic_debug/control` for a list of all available debug messages. It's a lot! Use `grep` to narrow it down.
+   - See [Dynamic Debug HowTo](https://www.kernel.org/doc/html/v4.14/admin-guide/dynamic-debug-howto.html) for more details.
+   
 
 ## Part 5: Make and flash the system image.
 1. Use `make image` to generate the system image.
