@@ -108,12 +108,12 @@ Note that I tend to use `apt` rather than `apt-get` -- it's simply friendlier.
       ```
    1. Install "necessary" packages and pick your favorite editor.
       ```bash
-      apt install -y udev dbus net-tools ntp sudo less vim nano
+      apt install -y udev dbus kmod net-tools ntp sudo less vim nano
       update-alternatives --config editor
       ```
    1. Install other useful packages.
       ```bash
-      apt install -y man-db ethtool hwinfo lshw kmod elinks python htop
+      apt install -y man-db ethtool hwinfo lshw console-setup elinks python htop
       ```
    1. Add a user. Note that you must add a user to the group `video` on the Jetson to access the ISP & NVMM. Maybe replace "user" and "pass" with what you think are reasonable! NVidia's defaults are "ubuntu" and "ubuntu".
       ```bash
