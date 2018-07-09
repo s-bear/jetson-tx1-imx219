@@ -246,7 +246,16 @@ Note that I tend to use `apt` rather than `apt-get` -- it's simply friendlier.
 1. Disabling SPI debug messages. The `spi-tegra114` module spams a lot of debug messages, which makes debugging other things quite difficult. It's possible to disable them without recompiling the kernel using the dynamic debug system. Unfortunately `spi-tegra114` is statically loaded, so we have to add the options to the kernel boot options rather than in a `etc/modprobe.d/*.conf` file. The relevant option is `spi_tegra114.dyndbg=-p`.
    - Try `sudo cat /sys/kernel/debug/dynamic_debug/control` for a list of all available debug messages. It's a lot! Use `grep` to narrow it down.
    - See [Dynamic Debug HowTo](https://www.kernel.org/doc/html/v4.14/admin-guide/dynamic-debug-howto.html) for more details.
-   
+
+1. Making an ext4 partition on the command line.
+   ```bash
+   #E.g. for a flash drive, running on the Jetson
+   sudo parted /dev/mmcblk1 mkpart primary ext4 0% 100%
+   sudo mkfs.ext4 -T largefile -m 0.1 -L jetson-data /dev/mmcblk1p1
+   ```
+   - `-T largefile` allocates fewer inodes per byte, optimizing the drive for writing few larger files (like for video recording). Don't include this if you have a different use-case.
+   - `-m 0.1` sets the percentage of blocks reserved for use by the super-user. This is to allow root-owned daemons to continue operation even when the drive is "full". Since this drive is only being used for data storage, I set the percentage very low. I left it non-zero just in case.
+   - `-L jetson-data` This sets the label for the partition. This is simply informative, but you can also set mount-location and other options based on the label in `/etc/fstab`. di
 
 ## Part 5: Make and flash the system image.
 1. Use `make image` to generate the system image.
