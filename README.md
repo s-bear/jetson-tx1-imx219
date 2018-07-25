@@ -170,6 +170,16 @@ Note that I tend to use `apt` rather than `apt-get` -- it's simply friendlier.
       ```bash
       printf '\nauto eth0\niface eth0 inet dhcp\niface eth0 inet6 auto\n' >> /etc/network/interfaces
       ```
+   1. *Optional:* Reduce the network service timeout at boot. If you regularly boot the machine without network access you'll want to do this. The default timeout is 5 minutes.
+      ```bash
+      mkdir /etc/systemd/networking.service.d
+      editor /etc/systemd/networking.service.d/override.conf
+      ```
+      Add:
+      ```
+      [Service]
+      TimeoutStartSec=5min
+      ```
    1. *Optional:* Add a local/accessible ntp server. I cannot stress how annoying it is to have an incorrect clock in certain scenarios. For example, my institution (UQ) requires a login to access the internet via an https website, however you need the correct time to validate the certificate. Without adding the local ntp server, I would have to manually set the date and time on every power cycle before accessing the network.
       ```bash
       editor /etc/ntp.conf
