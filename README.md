@@ -178,7 +178,7 @@ Note that I tend to use `apt` rather than `apt-get` -- it's simply friendlier.
       Add:
       ```
       [Service]
-      TimeoutStartSec=5min
+      TimeoutStartSec=30
       ```
    1. *Optional:* Add a local/accessible ntp server. I cannot stress how annoying it is to have an incorrect clock in certain scenarios. For example, my institution (UQ) requires a login to access the internet via an https website, however you need the correct time to validate the certificate. Without adding the local ntp server, I would have to manually set the date and time on every power cycle before accessing the network.
       ```bash
